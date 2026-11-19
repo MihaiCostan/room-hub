@@ -4,8 +4,6 @@ namespace RoomHub.Api.Domain.Bookings;
 
 public sealed record TimeSlot
 {
-    public static readonly TimeSpan MaxDuration = TimeSpan.FromHours(4);
-
     private TimeSlot()
     {
     }
@@ -14,7 +12,9 @@ public sealed record TimeSlot
 
     public DateTime EndUtc { get; private set; }
 
-    // R3: end strictly after start. R6: duration at most 4 hours (exactly 4h allowed).
+    public TimeSpan Duration => EndUtc - StartUtc;
+
+    // R3: end strictly after start. (Max duration depends on room capacity, enforced in Booking.Create: R6 + R10.)
     public static Result<TimeSlot> Create(DateTime startUtc, DateTime endUtc)
     {
         var start = startUtc.ToUniversalTime();
@@ -23,11 +23,6 @@ public sealed record TimeSlot
         if (end <= start)
         {
             return Result<TimeSlot>.Failure(BookingErrors.InvalidRange);
-        }
-
-        if (end - start > MaxDuration)
-        {
-            return Result<TimeSlot>.Failure(BookingErrors.DurationTooLong);
         }
 
         return Result<TimeSlot>.Success(new TimeSlot

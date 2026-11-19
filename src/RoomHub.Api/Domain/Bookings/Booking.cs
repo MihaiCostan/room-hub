@@ -5,6 +5,14 @@ namespace RoomHub.Api.Domain.Bookings;
 
 public sealed class Booking
 {
+    // R6: default max duration 4h. R10: rooms with capacity > 10 are limited to 2h.
+    public static readonly TimeSpan DefaultMaxDuration = TimeSpan.FromHours(4);
+    public static readonly TimeSpan LargeRoomMaxDuration = TimeSpan.FromHours(2);
+    public const int LargeRoomCapacityThreshold = 10;
+
+    // R11: a booking can be cancelled only if it starts at least this long from now.
+    public static readonly TimeSpan MinCancelLeadTime = TimeSpan.FromMinutes(60);
+
     private Booking()
     {
     }
@@ -47,6 +55,16 @@ public sealed class Booking
             return Result<Booking>.Failure(BookingErrors.AttendeesExceedCapacity);
         }
 
+        // R6 + R10: max duration depends on room capacity.
+        var maxDuration = room.Capacity > LargeRoomCapacityThreshold
+            ? LargeRoomMaxDuration
+            : DefaultMaxDuration;
+
+        if (slot.Duration > maxDuration)
+        {
+            return Result<Booking>.Failure(BookingErrors.DurationTooLong);
+        }
+
         if (slot.StartUtc < nowUtc)
         {
             return Result<Booking>.Failure(BookingErrors.StartInThePast);
@@ -64,11 +82,17 @@ public sealed class Booking
     }
 
     // R8: cancelling an already cancelled booking is a conflict.
-    public Result<Unit> Cancel()
+    // R11: cannot cancel if the booking starts less than 60 minutes from now.
+    public Result<Unit> Cancel(DateTime nowUtc)
     {
         if (Status == BookingStatus.Cancelled)
         {
             return Result<Unit>.Failure(BookingErrors.AlreadyCancelled);
+        }
+
+        if (Slot.StartUtc - nowUtc < MinCancelLeadTime)
+        {
+            return Result<Unit>.Failure(BookingErrors.CancelTooLate);
         }
 
         Status = BookingStatus.Cancelled;

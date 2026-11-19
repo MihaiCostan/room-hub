@@ -28,6 +28,12 @@ public static class BookingErrors
     public static readonly Error AlreadyCancelled =
         Error.Conflict("AlreadyCancelled", "The booking is already cancelled.");
 
+    public static readonly Error CancelTooLate =
+        Error.Conflict("CancelTooLate", "A booking can be cancelled only at least 60 minutes before it starts.");
+
+    public static readonly Error DailyLimitReached =
+        Error.Conflict("DailyLimitReached", "A participant cannot have more than 2 active bookings per day.");
+
     public static Error NotFound(Guid id) =>
         Error.NotFound("BookingNotFound", $"The booking {id} does not exist.");
 }
