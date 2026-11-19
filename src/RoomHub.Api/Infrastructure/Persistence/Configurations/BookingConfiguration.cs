@@ -1,11 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RoomHub.Api.Domain.Bookings;
 
 namespace RoomHub.Api.Infrastructure.Persistence.Configurations;
 
 public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
 {
+    // SQLite stores DateTime without kind; force UTC when reading back so JSON emits the trailing "Z".
+    private static readonly ValueConverter<DateTime, DateTime> UtcConverter = new(
+        toDb => toDb,
+        fromDb => DateTime.SpecifyKind(fromDb, DateTimeKind.Utc));
+
     public void Configure(EntityTypeBuilder<Booking> builder)
     {
         builder.ToTable("Bookings");
@@ -30,11 +36,13 @@ public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         {
             slot.Property(s => s.StartUtc)
                 .IsRequired()
-                .HasColumnName("StartUtc");
+                .HasColumnName("StartUtc")
+                .HasConversion(UtcConverter);
 
             slot.Property(s => s.EndUtc)
                 .IsRequired()
-                .HasColumnName("EndUtc");
+                .HasColumnName("EndUtc")
+                .HasConversion(UtcConverter);
         });
     }
 }
