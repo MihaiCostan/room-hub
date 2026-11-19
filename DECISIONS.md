@@ -29,7 +29,19 @@ What i pay: more code
 
 Draw in text (ASCII arrows) the path of a `POST /api/rooms/{roomId}/bookings` request through your project, with the **real** names of files and classes, from the endpoint to the database.
 
-_(your answer here)_
+POST /api/rooms/{roomId}/bookings
+-> CreateBookingEndpoint.Handle (Features/Bookings/CreateBooking)
+-> ICommandHandler<CreateBookingCommand, Booking>
+-> CreateBookingHandler.HandleAsync
+-> IRoomRepository.GetByIdAsync (404 if null)
+-> TimeSlot.Create (R3)
+-> Booking.Create (R2,R4,R5,R6,R10)
+-> IBookingRepository.CountActiveForParticipantOnDayAsync (R9)
+-> IBookingRepository.ListActiveForRoomAsync + TimeSlot.OverlapsWith (R7)
+-> IBookingRepository.AddAsync
+-> IUnitOfWork.SaveChangesAsync
+-> RoomHubDbContext -> SQLite (roomhub.db)
+-> endpoint: Results.Created (201) sau error.ToProblem()
 
 ## 5. What you rejected from what the AI gave you
 
